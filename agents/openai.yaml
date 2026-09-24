@@ -1,0 +1,4 @@
+interface:
+  display_name: "Current Provider Imagegen"
+  short_description: "Generate images with the active Codex provider."
+  default_prompt: "Use $current-provider-imagegen to generate an image with the active provider and return a verified preview path."
