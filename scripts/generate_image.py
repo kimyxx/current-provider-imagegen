@@ -24,9 +24,9 @@ from urllib.request import Request, urlopen
 
 
 DEFAULT_OUTPUT = "output/imagegen/current-provider-image.png"
-DEFAULT_QUALITY = "high"
+DEFAULT_QUALITY = "xhigh"
 DEFAULT_TIMEOUT = 180
-DEFAULT_IMAGES_MODEL = "gpt-image-2"
+DEFAULT_IMAGES_MODEL = "gpt-image-2.5-sunburst"
 DEFAULT_PARTIAL_IMAGES = 2
 MAX_INPUT_BYTES = 50 * 1024 * 1024
 
@@ -687,7 +687,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out", default=DEFAULT_OUTPUT)
     parser.add_argument("--model", help="Override the selected model")
     parser.add_argument("--api-mode", choices=("responses", "images"), default="responses")
-    parser.add_argument("--quality", choices=("low", "medium", "high", "auto"), default=DEFAULT_QUALITY)
+    parser.add_argument(
+        "--quality",
+        choices=("low", "medium", "high", "xhigh", "max", "auto"),
+        default=DEFAULT_QUALITY,
+    )
     parser.add_argument(
         "--size",
         help="Aspect-ratio hint; valid WIDTHxHEIGHT values are sent to the Images API or Responses image tool",
@@ -713,10 +717,10 @@ def main() -> int:
         if args.mask:
             validate_mask(args.mask, args.image)
         prompt = add_aspect_hint(prompt, args.size)
-        model = args.model or (DEFAULT_IMAGES_MODEL if args.api_mode == "images" else active_model)
+        image_model = args.model or DEFAULT_IMAGES_MODEL
 
         if args.api_mode == "images":
-            payload = build_images_payload(prompt, model, args.quality, args.size)
+            payload = build_images_payload(prompt, image_model, args.quality, args.size)
             if args.stream:
                 payload["stream"] = True
                 payload["partial_images"] = DEFAULT_PARTIAL_IMAGES
@@ -733,6 +737,7 @@ def main() -> int:
             input_value = build_input(prompt, args.image)
             image_tool: dict[str, Any] = {
                 "type": "image_generation",
+                "model": image_model,
                 "quality": args.quality,
             }
             if args.stream:
@@ -744,7 +749,7 @@ def main() -> int:
                 image_tool["action"] = "edit"
                 image_tool["input_image_mask"] = {"image_url": mask_data_url}
             payload = {
-                "model": model,
+                "model": active_model,
                 "input": input_value,
                 "tools": [image_tool],
             }
